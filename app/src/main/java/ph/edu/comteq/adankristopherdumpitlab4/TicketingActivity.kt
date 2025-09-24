@@ -50,7 +50,7 @@ class TicketingActivity : ComponentActivity() {
         ) {
             // Ticket Label
             Text(
-                text = "Ticket Price: €50.00",
+                text = "Ticket Price: €50.50",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
