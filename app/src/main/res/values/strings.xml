@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AdanKristopherDumpitLab4</string>
+    <string name="title_activity_explore">ExploreActivity</string>
+    <string name="title_activity_ticketing">TicketingActivity</string>
+</resources>
