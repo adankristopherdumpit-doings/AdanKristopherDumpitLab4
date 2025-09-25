@@ -2,4 +2,6 @@
     <string name="app_name">AdanKristopherDumpitLab4</string>
     <string name="title_activity_explore">ExploreActivity</string>
     <string name="title_activity_ticketing">TicketingActivity</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_ticketing_screening">TicketingScreening</string>
 </resources>

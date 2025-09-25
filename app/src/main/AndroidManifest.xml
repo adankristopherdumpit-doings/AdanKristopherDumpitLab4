@@ -12,9 +12,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AdanKristopherDumpitLab4">
         <activity
+            android:name=".TicketingScreening"
+            android:exported="false"
+            android:label="@string/title_activity_ticketing_screening"
+            android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+        <activity
             android:name=".TicketingActivity"
             android:exported="false"
             android:label="@string/title_activity_ticketing"
+            android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+        <activity
+            android:name=".ui.theme.MainActivity"
+            android:exported="false"
+            android:label="@string/title_activity_main"
             android:theme="@style/Theme.AdanKristopherDumpitLab4" />
         <activity
             android:name=".ExploreActivity"

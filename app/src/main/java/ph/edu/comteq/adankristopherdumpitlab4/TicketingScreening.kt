@@ -29,57 +29,58 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ph.edu.comteq.adankristopherdumpitlab4.ui.theme.AdanKristopherDumpitLab4Theme
 
-class TicketingActivity : ComponentActivity() {
+class TicketingScreening : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             SimpleTicketingScreen()
         }
     }
+}
 
-    @Composable
-    fun SimpleTicketingScreen() {
-        var isPurchased by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+@Composable
+fun SimpleTicketingScreen() {
+    var isPurchased by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Ticket Label
+        Text(
+            text = "Ticket Price: €50.50",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm Button
+        Button(
+            onClick = { isPurchased = true },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4AF37))
         ) {
-            // Ticket Label
             Text(
-                text = "Ticket Price: €50.50",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
+                text = "Confirm",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-            // Confirm Button
-            Button(
-                onClick = { isPurchased = true },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD4AF37))
-            ) {
-                Text(
-                    text = "Confirm",
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+        Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Purchase Confirmation Message
-            if (isPurchased) {
-                Text(
-                    text = "Thank you for purchasing!",
-                    color = Color(0xFFD4AF37),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+        // Purchase Confirmation Message
+        if (isPurchased) {
+            Text(
+                text = "Thank you for purchasing!",
+                color = Color(0xFFD4AF37),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
