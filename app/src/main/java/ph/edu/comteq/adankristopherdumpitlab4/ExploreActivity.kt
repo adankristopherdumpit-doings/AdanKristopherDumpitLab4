@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,11 +89,7 @@ fun ExploreScreen() {
                 onClick = {
                     val intent = Intent(context, TicketingScreening::class.java)
                     context.startActivity(intent)
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.Black
-                )
+                }
             ) {
                 Text("Tickets >", fontFamily = optima, fontSize = 16.sp, color = Color.White)
             }
