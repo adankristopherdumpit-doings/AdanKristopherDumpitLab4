@@ -11,26 +11,32 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AdanKristopherDumpitLab4">
+
         <activity
             android:name=".TicketingScreening"
             android:exported="false"
             android:label="@string/title_activity_ticketing_screening"
             android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
         <activity
             android:name=".TicketingActivity"
             android:exported="false"
             android:label="@string/title_activity_ticketing"
             android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
         <activity
             android:name=".ui.theme.MainActivity"
             android:exported="false"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
         <activity
             android:name=".ExploreActivity"
             android:exported="false"
             android:label="@string/title_activity_explore"
             android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
+        <!-- Launcher Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -38,10 +44,22 @@
             android:theme="@style/Theme.AdanKristopherDumpitLab4">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ArtistPage"
+            android:exported="false"
+            android:label="Artist Page"
+            android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
+        <activity
+            android:name=".ExhibitPage"
+            android:exported="false"
+            android:label="Artwork Exhibit"
+            android:theme="@style/Theme.AdanKristopherDumpitLab4" />
+
     </application>
 
 </manifest>

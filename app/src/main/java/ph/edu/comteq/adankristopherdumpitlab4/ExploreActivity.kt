@@ -172,9 +172,13 @@ fun ExploreScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFD4AF37), RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                    .clickable { /* Add an action so that it can get in anywhere it wants*/ }
+                    .clickable {
+                        val intent = Intent(context, ArtistPage::class.java)
+                        context.startActivity(intent)
+                    }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
+
             ) {
                 Text(
                     text = "Visit Gallery",
