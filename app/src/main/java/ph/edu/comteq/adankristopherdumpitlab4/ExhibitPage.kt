@@ -7,40 +7,38 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight as ComposeFontWeight
+import androidx.compose.ui.util.lerp
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
 import java.io.InputStreamReader
 import ph.edu.comteq.adankristopherdumpitlab4.artistmodel.Artist
 import ph.edu.comteq.adankristopherdumpitlab4.artistmodel.populateArtists
 import ph.edu.comteq.adankristopherdumpitlab4.R
+import androidx.compose.foundation.ExperimentalFoundationApi
 
 data class Artwork(
     val title: String,
@@ -80,13 +78,14 @@ class ExhibitPage : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExhibitScreen(artistId: Int, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var artist by remember { mutableStateOf<Artist?>(null) }
     var artworks by remember { mutableStateOf<List<Artwork>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { artworks.size })
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = artistId) {
@@ -103,11 +102,12 @@ fun ExhibitScreen(artistId: Int, modifier: Modifier = Modifier) {
         isLoading = false
     }
 
-    // Auto-scroll to middle item for initial view
     LaunchedEffect(artworks.size) {
         if (artworks.isNotEmpty()) {
             val middleIndex = artworks.size / 2
-            pagerState.scrollToPage(middleIndex)
+            coroutineScope.launch {
+                pagerState.scrollToPage(middleIndex)
+            }
         }
     }
 
@@ -123,36 +123,107 @@ fun ExhibitScreen(artistId: Int, modifier: Modifier = Modifier) {
             }
         } else if (artist != null && artworks.isNotEmpty()) {
             HorizontalPager(
-                count = artworks.size,
                 state = pagerState,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures { change, dragAmount ->
+                            coroutineScope.launch {
+                                val targetPage = if (dragAmount > 0) {
+                                    pagerState.currentPage - 1
+                                } else {
+                                    pagerState.currentPage + 1
+                                }.coerceIn(0, artworks.size - 1)
+
+                                pagerState.animateScrollToPage(targetPage)
+                            }
+                            change.consume()
+                        }
+                    }
             ) { page ->
                 val artwork = artworks[page]
+                val imageId = artist!!.artworks[page]
+
+                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+
                 ArtworkCard(
                     artwork = artwork,
-                    imageId = artist!!.artworks[page],
+                    imageId = imageId,
                     index = page,
-                    totalItems = artworks.size
+                    totalItems = artworks.size,
+                    pageOffset = pageOffset,
+                    pagerState = pagerState
                 )
             }
+
+            PageIndicator(
+                pageCount = artworks.size,
+                currentPage = pagerState.currentPage,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+            )
         } else {
-            Text("Artist or artworks not found.")
+            Text("Artist or artworks not found.", color = Color.White)
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
+fun ArtworkCard(
+    artwork: Artwork,
+    imageId: Int,
+    index: Int,
+    totalItems: Int,
+    pageOffset: Float,
+    pagerState: PagerState
+) {
+    val scaleFactor = 0.8f
+    val alphaFactor = 0.5f
+
+    val scale = remember(pageOffset) {
+        if (kotlin.math.abs(pageOffset) < 1) {
+            lerp(1f, scaleFactor, kotlin.math.abs(pageOffset))
+        } else {
+            scaleFactor
+        }
+    }
+
+    val alpha = remember(pageOffset) {
+        if (kotlin.math.abs(pageOffset) < 1) {
+            lerp(1f, alphaFactor, kotlin.math.abs(pageOffset))
+        } else {
+            alphaFactor
+        }
+    }
+
+    val rotationY = remember(pageOffset) {
+        pageOffset * 15f
+    }
+
+    val translationX = remember(pageOffset) {
+        pageOffset * 100f
+    }
+
+    val isCurrentPage = pagerState.currentPage == index
     val isMiddle = index == totalItems / 2
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+                this.rotationY = rotationY
+                this.translationX = translationX
+            }
             .padding(16.dp),
         horizontalAlignment = Alignment.Start
     ) {
         if (!isMiddle) {
-            // Title and details above image for first and last items
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -163,8 +234,8 @@ fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
                     Text(
                         text = artwork.title,
                         fontSize = 24.sp,
-                        fontWeight = ComposeFontWeight.Bold,
-                        fontFamily = playfairdisplayregular3,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif,
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -177,19 +248,43 @@ fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
             }
         }
 
-        // Larger image with shield-like shape (rectangle top, U-shaped bottom)
-        Image(
-            painter = painterResource(id = imageId),
-            contentDescription = artwork.title,
+        val cardShape = if (isMiddle) {
+            RoundedCornerShape(
+                topStart = 160.dp,
+                topEnd = 160.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 16.dp
+            )
+        } else {
+            RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = 160.dp,
+                bottomEnd = 160.dp
+            )
+        }
+
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(320.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 160.dp, bottomEnd = 160.dp)),
-            contentScale = ContentScale.Fit
-        )
+                .padding(vertical = 8.dp),
+            shape = cardShape,
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = if (isCurrentPage) 16.dp else 4.dp
+            )
+        ) {
+            Image(
+                painter = painterResource(id = imageId),
+                contentDescription = artwork.title,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(cardShape),
+                contentScale = ContentScale.Fit
+            )
+        }
 
         if (isMiddle) {
-            // Title and details below image for middle item
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -200,8 +295,8 @@ fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
                     Text(
                         text = artwork.title,
                         fontSize = 24.sp,
-                        fontWeight = ComposeFontWeight.Bold,
-                        fontFamily = playfairdisplayregular3,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif,
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -216,7 +311,6 @@ fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Comment with black background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -243,6 +337,34 @@ fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun PageIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        repeat(pageCount) { index ->
+            val isSelected = index == currentPage
+            val size = if (isSelected) 12.dp else 8.dp
+            val color = if (isSelected) Color(0xFFFFD700) else Color.Gray
+
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(size)
+                    .background(
+                        color = color,
+                        shape = RoundedCornerShape(50)
+                    )
+            )
         }
     }
 }
