@@ -1,17 +1,18 @@
 package ph.edu.comteq.adankristopherdumpitlab4
 
-import androidx.compose.ui.input.key.type
-
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -24,15 +25,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight as ComposeFontWeight
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.InputStreamReader
+import ph.edu.comteq.adankristopherdumpitlab4.artistmodel.Artist
+import ph.edu.comteq.adankristopherdumpitlab4.artistmodel.populateArtists
+import ph.edu.comteq.adankristopherdumpitlab4.R
 
 data class Artwork(
     val title: String,
@@ -47,14 +55,14 @@ class ExhibitPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
-        val artworkImageId = intent.getIntExtra("ARTWORK_IMAGE_ID", 0)
+        val artistId = intent.getIntExtra("ARTIST_ID", 0)
+        val artistName = intent.getStringExtra("ARTIST_NAME") ?: ""
 
         setContent {
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text("Artwork Exhibit") },
+                        title = { Text("$artistName's Artwork Exhibit") },
                         navigationIcon = {
                             IconButton(onClick = { finish() }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -63,14 +71,8 @@ class ExhibitPage : ComponentActivity() {
                     )
                 }
             ) { paddingValues ->
-                val artworkTitle = resources.getResourceEntryName(artworkImageId)
-                    .replace("leonardo_da_vinci_", "") // Clean up the name
-                    .replace("_", " ")
-                    .replaceFirstChar { it.uppercase() }
-
                 ExhibitScreen(
-                    artworkTitle = artworkTitle,
-                    artworkImageId = artworkImageId,
+                    artistId = artistId,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -79,68 +81,171 @@ class ExhibitPage : ComponentActivity() {
 }
 
 @Composable
-fun ExhibitScreen(artworkTitle: String, artworkImageId: Int, modifier: Modifier = Modifier) {
+fun ExhibitScreen(artistId: Int, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    var artwork by remember { mutableStateOf<Artwork?>(null) }
+    var artist by remember { mutableStateOf<Artist?>(null) }
+    var artworks by remember { mutableStateOf<List<Artwork>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val pagerState = rememberPagerState()
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = artworkTitle) {
-        artwork = getArtworkDetails(context, artworkTitle)
+    LaunchedEffect(key1 = artistId) {
+        artist = populateArtists().find { it.id == artistId }
+        if (artist != null) {
+            artworks = artist!!.artworks.mapNotNull { artworkId ->
+                val title = context.resources.getResourceEntryName(artworkId)
+                    .replace(artist!!.name.lowercase().replace(" ", "_") + "_", "")
+                    .replace("_", " ")
+                    .replaceFirstChar { it.uppercase() }
+                getArtworkDetails(context, title)
+            }
+        }
         isLoading = false
+    }
+
+    // Auto-scroll to middle item for initial view
+    LaunchedEffect(artworks.size) {
+        if (artworks.isNotEmpty()) {
+            val middleIndex = artworks.size / 2
+            pagerState.scrollToPage(middleIndex)
+        }
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(Color.Black)
             .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(id = artworkImageId),
-            contentDescription = artwork?.title ?: "Artwork",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop
-        )
-
-        Spacer(Modifier.height(16.dp))
-
         if (isLoading) {
-            CircularProgressIndicator()
-        } else if (artwork != null) {
-            Text(
-                text = artwork!!.title,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = playfairdisplayregular3
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "c. ${artwork!!.years}",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Location: ${artwork!!.born_at}",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(24.dp))
-            Text(
-                text = artwork!!.comment,
-                fontSize = 18.sp,
-                lineHeight = 26.sp
-            )
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (artist != null && artworks.isNotEmpty()) {
+            HorizontalPager(
+                count = artworks.size,
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                val artwork = artworks[page]
+                ArtworkCard(
+                    artwork = artwork,
+                    imageId = artist!!.artworks[page],
+                    index = page,
+                    totalItems = artworks.size
+                )
+            }
         } else {
-            Text("Artwork details not found.")
+            Text("Artist or artworks not found.")
         }
     }
 }
 
+@Composable
+fun ArtworkCard(artwork: Artwork, imageId: Int, index: Int, totalItems: Int) {
+    val isMiddle = index == totalItems / 2
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        if (!isMiddle) {
+            // Title and details above image for first and last items
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFFD700), RoundedCornerShape(8.dp))
+                    .padding(vertical = 12.dp, horizontal = 16.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text(
+                        text = artwork.title,
+                        fontSize = 24.sp,
+                        fontWeight = ComposeFontWeight.Bold,
+                        fontFamily = playfairdisplayregular3,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "c. ${artwork.years}, ${artwork.born_at}",
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+
+        // Larger image with shield-like shape (rectangle top, U-shaped bottom)
+        Image(
+            painter = painterResource(id = imageId),
+            contentDescription = artwork.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(320.dp)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 160.dp, bottomEnd = 160.dp)),
+            contentScale = ContentScale.Fit
+        )
+
+        if (isMiddle) {
+            // Title and details below image for middle item
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFFD700), RoundedCornerShape(8.dp))
+                    .padding(vertical = 12.dp, horizontal = 16.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.Start) {
+                    Text(
+                        text = artwork.title,
+                        fontSize = 24.sp,
+                        fontWeight = ComposeFontWeight.Bold,
+                        fontFamily = playfairdisplayregular3,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "c. ${artwork.years}, ${artwork.born_at}",
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Comment with black background
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = Color.Black,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.Top
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.quote),
+                    contentDescription = "Quote",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = artwork.comment,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = Color.White,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
 
 private fun getArtworkDetails(context: Context, title: String): Artwork? {
     val gson = Gson()

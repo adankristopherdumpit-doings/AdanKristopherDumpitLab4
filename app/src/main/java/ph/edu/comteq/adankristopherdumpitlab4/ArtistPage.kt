@@ -130,14 +130,15 @@ fun ArtistCard(artist: Artist) {
             // Artist Info Row
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(id = artist.artworks.first()),
-                    contentDescription = "Artwork by ${artist.name}",
+                    painter = painterResource(id = artist.avatar),
+                    contentDescription = "Portrait of ${artist.name}",
                     modifier = Modifier
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
                             val intent = Intent(context, ExhibitPage::class.java).apply {
-                                putExtra("ARTWORK_IMAGE_ID", artist.artworks.first())
+                                putExtra("ARTIST_ID", artist.id)
+                                putExtra("ARTIST_NAME", artist.name)
                             }
                             context.startActivity(intent)
                         },

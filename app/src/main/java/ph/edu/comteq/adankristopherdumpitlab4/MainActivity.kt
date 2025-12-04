@@ -35,6 +35,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.offset
 import ph.edu.comteq.adankristopherdumpitlab4.ui.theme.AdanKristopherDumpitLab4Theme
 
 val playfairdisplayregular = FontFamily(
@@ -53,10 +60,83 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun ReverseTypingText(
+    fullText: String,
+    modifier: Modifier = Modifier,
+    fontFamily: FontFamily? = null,
+    fontSize: androidx.compose.ui.unit.TextUnit = 28.sp,
+    color: Color = Color(0xFFD4AF37),
+    durationMillis: Int = 4000
+) {
+    var targetLength by remember { mutableStateOf(0) }
+    val animatedLength by animateIntAsState(
+        targetValue = targetLength,
+        animationSpec = tween(durationMillis = durationMillis)
+    )
+
+    LaunchedEffect(Unit) {
+        targetLength = fullText.length
+    }
+
+    Text(
+        text = fullText.take(animatedLength),
+        fontFamily = fontFamily,
+        fontSize = fontSize,
+        color = color,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun ReverseTypingInText(
+    fullText: String,
+    modifier: Modifier = Modifier,
+    fontFamily: FontFamily? = null,
+    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+    color: Color = Color.White,
+    textAlign: TextAlign? = null,
+    lineHeight: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    durationMillis: Int = 12000,
+    trigger: Any = Unit
+) {
+    var targetLength by remember(trigger) { mutableStateOf(0) }
+    val animatedLength by animateIntAsState(
+        targetValue = targetLength,
+        animationSpec = tween(durationMillis = durationMillis)
+    )
+
+    LaunchedEffect(trigger) {
+        targetLength = fullText.length
+    }
+
+    Text(
+        text = fullText.takeLast(animatedLength),
+        fontFamily = fontFamily,
+        fontSize = fontSize,
+        color = color,
+        textAlign = textAlign,
+        lineHeight = lineHeight,
+        modifier = modifier
+    )
+}
 
 @Composable
 fun Homepage() {
     val context = LocalContext.current
+
+    var startAnim by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        startAnim = true
+    }
+    val imageAlpha by animateFloatAsState(
+        targetValue = if (startAnim) 1f else 0f,
+        animationSpec = tween(durationMillis = 4000)
+    )
+    val imageOffset by animateDpAsState(
+        targetValue = if (startAnim) 0.dp else (-300).dp,
+        animationSpec = tween(durationMillis = 4000)
+    )
 
     Column(
         modifier = Modifier
@@ -96,7 +176,10 @@ fun Homepage() {
                 painter = painterResource(id = R.drawable.louvre),
                 contentDescription = "Louvre",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(alpha = imageAlpha)
+                    .offset(y = imageOffset)
             )
 
             Box(
@@ -109,8 +192,8 @@ fun Homepage() {
                     )
             )
 
-            Text(
-                text = "Experience Art",
+            ReverseTypingText(
+                fullText = "Experience Art",
                 fontFamily = playfairdisplayregular,
                 fontSize = 28.sp,
                 color = Color(0xFFD4AF37),
@@ -121,8 +204,8 @@ fun Homepage() {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Description
-        Text(
-            text = "We are thrilled to invite you to join us for an extraordinary event that will immerse you in the world of art.",
+        ReverseTypingInText(
+            fullText = "We are thrilled to invite you to join us for an extraordinary event that will immerse you in the world of art.",
             fontFamily = optima,
             fontSize = 16.sp,
             color = Color.White,
